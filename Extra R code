@@ -1,0 +1,45 @@
+#WORK: DELETE OUTLIER OF DEATH RATE
+### SHOWING OUTLIER
+#Y2_D<-Id_D1[-c(43,33),]
+
+Y2_D<-Id_D1
+View(Y2_D)
+
+######
+# Y2 after outlier remove
+x20<-Y2_D[,c("")]; x20
+x21<-Y2_D[,c("RF_med")]; x21
+x22<-Y2_D[,c("RF_high")]; x22
+y2<-Y2_D[,c("D_Rate")]; y2
+boxplot(y2)
+
+plot(y2~x20,main="Death case vs Low Risk in percentage", sub="Case IV",xlab="%Low Risk per county", ylab="%Death Rate per county");abline(lm(y2~x20))
+
+plot(y2~x21,main="Death case vs Med Risk in percentage", sub="Case V",xlab="%Med Risk per county", ylab="%Death Rate per county");abline(lm(y2~x21))
+
+plot(y2~x22,main="Death case vs High Risk in percentage", sub="Case VI",xlab="%High Risk per county", ylab="%Death Rate per county");abline(lm(y2~x22))
+
+#summary
+y2x0<-lm(formula=y2~x20,data=Y2_D) ; summary(y2x0)
+#cor(x20, y2, method = c("pearson"))  #corr coeff pearson
+y2x1<-lm(formula=y2~x21,data=Y2_D) ; summary(y2x1)
+#cor(x21, y2, method = c("pearson"))  #corr coeff pearson
+y2x2<-lm(formula=y2~x22,data=Y2_D) ; summary(y2x2)
+#cor(x22, y2, method = c("pearson"))  #corr coeff pearson
+
+#boxplot(y2)
+
+B0<-resid(y2x0);qqnorm(B0);qqline(B0)
+B1<-resid(y2x1);qqnorm(B1);qqline(B1)
+B3<-resid(y2x2);qqnorm(B2);qqline(B2)
+#######RESIDUAL from normal qq test
+
+#residuals(),predict()
+#plot(y1x0$fitted.values,y1x0$residuals)
+plot(y2x0)
+plot(y2x1)
+plot(y2x2)
+
+
+################HETEROSCEDASTICITY###############
+
