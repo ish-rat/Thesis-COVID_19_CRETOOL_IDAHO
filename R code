@@ -1,0 +1,228 @@
+# # #  1/17/22 LAST UPDATE SAVED
+
+#Y1 COVID Confirmed 
+confirmedraw <- read.csv("~/THESIS/time_series_covid19_confirmed_US.csv") 
+#str(confirmedraw) # Check Structure
+
+id_confirmed <- subset(confirmedraw, confirmedraw$Province_State == "Idaho") #Subset state=IDAHO ROW
+View(id_confirmed)
+
+names(id_confirmed)[ncol(id_confirmed)]<-"NCOL"
+id_conf<-id_confirmed[,c("Admin2", "NCOL")] #Put col num we get from for loop
+View(id_conf)    # R=46, C=2
+
+colnames(id_conf)[1] = "County"
+colnames(id_conf)[2] = "C_Case(Cum)"
+View(id_conf) #R=46 C=2
+
+id_DF1<- as.data.frame((id_conf))  ##DataFrame #Important
+#View(id_DF1)      # R=46, C=2 
+
+#DATA CLEANING #UNASSIGNED #OUTOFIDAHO
+
+IDY1<-subset(id_DF1, County!="Unassigned" & County!="Out of ID")
+View(IDY1)    # R=44, C=2
+sum(IDY1$`C_Case(Cum)`)
+################################
+#Y2
+
+deathraw <- read.csv("~/THESIS/time_series_covid19_deaths_US.csv")  
+#str(deathraw) 
+
+id_death <- subset(deathraw, deathraw$Province_State == "Idaho")
+
+names(id_death)[ncol(id_death)]<-"NCOL"
+id_dth<-id_death[,c("Admin2", "NCOL")] #Put col num we get from for loop
+
+View(id_dth)  # R=46 C=2
+
+colnames(id_dth)[1] = "County"
+colnames(id_dth)[2] = "D_Case(Cum)"
+#View(id_dth) # R 46 C 2
+
+id_DF2<- as.data.frame((id_dth))  
+sum(id_DF2$`D_Case(Cum)`)
+#View(id_DF2)            
+
+
+########DATA CLEANING
+
+IDY2<-subset(id_DF2, County!="Unassigned" & County!="Out of ID")
+View(IDY2)  # R=44 C=2
+
+#######################################################################
+
+### CRE TOOL#########
+
+CREdata <- read.csv("~/THESIS/CRE_tool.csv")
+#subsetting ROW Number from US to ID(44 county)
+id_X <- subset(CREdata, CREdata$stname =="Idaho" & CREdata$geo_level== "County")
+   View(id_X) # R=44, C=21
+
+   ID_X<-id_X[,c("ctname", "popuni","predrt_0","predrt_12","predrt_3")] #Put col num we get from for loop
+View(ID_X)   
+ID_X<- as.data.frame((ID_X)) # class(ID_X) = data frame
+colnames(ID_X)[1] = "County Name"
+colnames(ID_X)[2] = "Pop"
+colnames(ID_X)[3] = "low_risk"
+colnames(ID_X)[4] = "med_risk"
+colnames(ID_X)[5] = "high_risk"
+View(ID_X)  # R=44 C=5
+#######################################################################
+
+####   PERCENTAGE OF Y1,Y2 USING POPULATION
+
+ID_Total<- merge(IDY1, IDY2,by="County",all.x=T)    #Merging Y1, X table
+#View(ID_Total) # R=44 C=3
+ID_Merge<-cbind(ID_Total,ID_X)
+View(ID_Merge) # R=44 C=8
+
+
+ID_Merge$C_Rate<- ID_Merge$`C_Case(Cum)`/ID_Merge$Pop
+
+ID_Merge$D_Rate<- ID_Merge$`D_Case(Cum)`/ID_Merge$Pop
+
+ID_Merge<-as.data.frame(ID_Merge)
+View(ID_Merge)   # R=44 C=10
+
+#####################################
+
+#Split here C_rate D_rate 
+
+Id_C <- ID_Merge[,c(4:9)]
+View(Id_C)
+
+#ORDER
+# sort ascending CONFIRMED RATE
+Id_C1<- Id_C[order(Id_C$C_Rate),]
+#Id_C1<- Id_C[order(ID_C$C_Rate,decreasing = FALSE) , ]
+View(Id_C1)   #multiply 100
+
+#write.table(Id_C1,"C:/Users/ish_r/OneDrive/Documents/THESIS/Id_C1.txt",sep="\t")
+
+x10<-Id_C1[,c("low_risk")]; x10
+x11<-Id_C1[,c("med_risk")]; x11
+x12<-Id_C1[,c("high_risk")]; x12
+y1<-Id_C1[,c("C_Rate")]; y1
+
+##########################
+plot(y1~x10,main="",ylab="confirmed cases", xlab="percent of low risk people per county");abline(lm(y1~x10))
+plot(y1~x11,main="",ylab="confirmed cases", xlab="percent of medium risk people per county"); abline(lm(y1~x11))
+plot(y1~x12,main="",ylab="confirmed cases", xlab="percent of highrisk people per county"); abline(lm(y1~x12))
+
+###REMOVE OUTLIER ;boxplot(y1);y11 <- y1[!y1 %in% boxplot.stats(y1)$out] ;length(y1) - length(y11) # Count removed observations;boxplot(y11) # Create boxplot without outliers
+#REPEAT PROCESS AFTER rmv OUTlier;plot(y11~x1); abline(y11*x1)  #NOT VALID cause y11 have R=43, x1 have R=44)
+boxplot(y1)
+#boxplot(y1)$out
+
+### SHOWING 1 OUTLIER
+#Remove
+#Y1_C<-Id_C1[c(-43,-44),]
+#dont remove outier 
+Y1_C<-Id_C1    
+View(Y1_C)
+######
+#after outlier remove
+
+
+x10<-Y1_C[,c("low_risk")]; x10
+x11<-Y1_C[,c("med_risk")]; x11
+x12<-Y1_C[,c("high_risk")];x12
+y1<-Y1_C[,c("C_Rate")]; y1
+
+#summary(y1~x11);lm(y1~x11);summary(y1~x12);lm(y1~x12);summary(y1~x13);lm(y1~x13)
+
+y1x0<-lm(formula=y1~x10,data=Y1_C) ; summary(y1x0)
+y1x1<-lm(formula=y1~x11,data=Y1_C) ; summary(y1x1)
+y1x2<-lm(formula=y1~x12,data=Y1_C)  ; summary(y1x2)
+#par(mfrow=c(2,2))
+plot(y1~x10,main="",ylab="cumulative confirmed cases in percent", xlab="percent of low risk people per county");abline(lm(y1~x10))
+plot(y1~x11,main="Confirmed case vs med Risk in %"); abline(lm(y1~x11))
+plot(y1~x12,main="Confirmed case vs high Risk in %"); abline(lm(y1~x12))
+
+
+#######RESIDUAL
+
+A1<-resid(y1x0);qqnorm(A1);qqline(A1)
+A2<-resid(y1x1);qqnorm(A2);qqline(A2)
+A3<-resid(y1x2);qqnorm(A3);qqline(A3)
+
+#  plot(y1x1$fitted.values,y1x1$residuals)
+par(mfrow=c(2,2))
+   plot(y1x0)
+   plot(y1x1)
+   plot(y1x2)
+   
+############################################
+#DEATH_RATE
+ID_D <- ID_Merge[,c(4:8,10)]   #ID_D <- new_ID[,-6]
+ID_D<-as.data.frame(ID_D)
+#View(ID_D)
+
+# sort ascending CONFIRMED RATE
+Id_D1<- ID_D[order(ID_D$D_Rate,decreasing = FALSE) , ]
+Id_D1<- ID_D[order(ID_D$D_Rate) , ]
+
+View(Id_D1)
+
+x20<-Id_D1[,c("low_risk")]; x20
+x21<-Id_D1[,c("med_risk")]; x21
+x22<-Id_D1[,c("high_risk")]; x22
+y2<-Id_D1[,c("D_Rate")]; y2
+
+
+##########################
+plot(y2~x20, main="Cof Deaths vs low risk");abline(lm(y2~x20))
+plot(y2~x21,main="conf deaths vs med risk"); abline(lm(y2~x21))
+#plot(log(y2)~log(x23),main="name log");abline(lm(y2~x22))
+plot(y2~x22,main="conf deaths vs high risk"); abline(lm(y2~x22))
+
+boxplot(y2)
+
+#OUTLIER WHAT TO DO 
+#Y2_D<-Id_D1[-c(43,44),]
+Y2_D<-Id_D1
+View(Y2_D)
+
+######
+# Y2 after outlier remove
+
+x20<-Y2_D[,c("low_risk")]; x20
+x21<-Y2_D[,c("med_risk")]; x21
+x22<-Y2_D[,c("high_risk")]; x22
+y2<-Y2_D[,c("D_Rate")]; y2
+
+#boxplot(y2)
+
+#summary with outlier
+y2x0<-summary(lm(formula=y2~x21,data=Id_D1))
+
+y2x1<-summary(lm(formula=y2~x22,data=Id_D1))
+
+y2x2<-summary(lm(formula=y2~x22,data=Id_D1))
+
+#SUMMARY WITHOUT OUTLLIER
+y2x0<-summary(lm(formula=y2~x20,data=Y2_D));  summary(y2x0)
+
+y2x1<-summary(lm(formula=y2~x21,data=Y2_D)); summary(y2x1)
+
+y2x2<-summary(lm(formula=y2~x22,data=Y2_D));  summary(y2x2)
+par(mfrow=c(1,1))
+plot(y2~x21,main="#D vs 0 Risk in %"); abline(lm(y2~x21))
+plot(y2~x22,main="#D vs 1/2 Risk in %");abline(lm(y2~x22))
+plot(y2~x23,main="#D vs 3+ Risk in %"); abline(lm(y2~x23))
+
+boxplot(y2)
+
+B1<-resid(y2x0);qqnorm(B1);qqline(B1)
+B2<-resid(y2x1);qqnorm(B2);qqline(B2)
+B3<-resid(y2x2);qqnorm(B3);qqline(B3)
+################HETEROSCEDASTICITY###############
+#ATTN: this is spearman test
+cor.test(Y1_C$C_Rate, Y1_C$low_risk, method="spearman")
+cor.test(Y1_C$C_Rate, Y1_C$med_risk, method="spearman")
+cor.test(Y1_C$C_Rate, Y1_C$high_risk, method="spearman")
+
+cor.test(Y2_D$D_Rate, Y2_D$rate_0,method="spearman")
+cor.test(Y2_D$D_Rate, Y2_D$`rate_1/2`,method="spearman")
+cor.test(Y2_D$D_Rate , Y2_D$`rate_3+`,method="spearman")
